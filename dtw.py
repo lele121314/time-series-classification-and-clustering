@@ -17,6 +17,7 @@ class ts_cluster(object):
         self.num_clust=num_clust
         self.assignments={}
         self.centroids=[]
+        self.centroids_id=[]
     
     def compa_clust(self,s1,centroid,w):        
         centroid_part = centroid[:,:5]
@@ -37,7 +38,7 @@ class ts_cluster(object):
             
             self.assign[closest_clust].append(ind)
 
-        print self.assign
+        print (self.assign)
         #print s1[1]
         self.s2 = pd.Series([[] for i in range(len(s1))],index=np.arange(len(s1)))
         #print self.s2
@@ -56,16 +57,20 @@ class ts_cluster(object):
         k-means clustering algorithm for time series data.  dynamic time warping Euclidean distance
          used as default similarity measure. 
         '''
-        self.centroids=random.sample(data,self.num_clust)
-        print len(self.centroids)
+        lenth_data = len(data)
+        self.centroids_id = random.sample(range(lenth_data),self.num_clust)
+        print(self.centroids_id)
+        for i in self.centroids_id:
+            self.centroids.append(i)
+        print (len(self.centroids))
         for n in range(num_iter):
             if progress:
-                print 'iteration '+str(n+1)
+                print ('iteration '+str(n+1))
             
             self.assignments={}
             for ind,i in enumerate(data):
                 min_dist=float('inf')
-                #closest_clust=None
+                closest_clust=None
                 for c_ind,j in enumerate(self.centroids):
                     if self.LB_Keogh(i,j,5)<min_dist:
                         cur_dist=self.SpatioTemporalDis(i, j, w)
@@ -79,16 +84,24 @@ class ts_cluster(object):
                 else:
                     self.assignments[closest_clust]=[]
                     
-            print len(self.assignments)
+            print (len(self.assignments))
             #recalculate centroids of clusters
             for key in self.assignments:
                 clust_sum=0
                 for k in self.assignments[key]:
                     clust_sum=clust_sum+data[k]
-                self.centroids[key]=[m/len(self.assignments[key]) for m in clust_sum]
+                ans = []
+                for m in clust_sum:
+                    ans.append(m/len(self.assignments[key]))
+                # print([m/len(self.assignments[key]) for m in clust_sum])
+                self.centroids[key]=ans
+
             
     def get_centroids(self):
         return self.centroids
+
+    def get_centroids_id(self):
+        return self.centroids_id
         
     def get_assignments(self):
         return self.assignments
@@ -157,8 +170,8 @@ class ts_cluster(object):
         LB_sum=0
         for ind,i in enumerate(s1):
             
-            lower_bound=min(s2[(ind-r if ind-r>=0 else 0):(ind+r)])
-            upper_bound=max(s2[(ind-r if ind-r>=0 else 0):(ind+r)])
+            lower_bound=min(s2[(ind-r if ind-r >= 0 else 0):(ind+r)])
+            upper_bound=max(s2[(ind-r if ind-r >= 0 else 0):(ind+r)])
             
             if i>upper_bound:
                 LB_sum=LB_sum+(i-upper_bound)**2
